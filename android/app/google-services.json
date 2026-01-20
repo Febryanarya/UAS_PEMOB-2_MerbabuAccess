@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "311505560380",
+    "project_id": "kita-5a01e",
+    "storage_bucket": "kita-5a01e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:311505560380:android:7fad08350274b8677fb439",
+        "android_client_info": {
+          "package_name": "com.merbabuaccess.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsJYHZ0fZDynIpOCNED9aGOxVvTlGhTpg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

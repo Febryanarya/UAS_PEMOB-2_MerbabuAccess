@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1077499677853",
+    "project_id": "merbabuaccess-app",
+    "storage_bucket": "merbabuaccess-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1077499677853:android:bbae4f988ddad8d725d874",
+        "android_client_info": {
+          "package_name": "com.merbabuaccess.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcn_7DE9BJvGxofsQZtKnECmfO9tgVrVM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
