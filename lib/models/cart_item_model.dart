@@ -2,7 +2,7 @@ class CartItem {
   final String paketId;
   final String paketName;
   final String paketRoute;
-  final double paketPrice; // ✅ Tetap double
+  final double paketPrice; // double
   final String imageUrl;
   DateTime tanggalBooking;
   int jumlahOrang;
@@ -12,7 +12,7 @@ class CartItem {
     required this.paketId,
     required this.paketName,
     required this.paketRoute,
-    required this.paketPrice, // ✅ double
+    required this.paketPrice, 
     required this.imageUrl,
     required this.tanggalBooking,
     required this.jumlahOrang,
@@ -43,7 +43,7 @@ class CartItem {
       paketId: map['paketId'],
       paketName: map['paketName'],
       paketRoute: map['paketRoute'],
-      paketPrice: (map['paketPrice'] as num).toDouble(), // ✅ Convert ke double
+      paketPrice: (map['paketPrice'] as num).toDouble(), // double
       imageUrl: map['imageUrl'],
       tanggalBooking: DateTime.parse(map['tanggalBooking']),
       jumlahOrang: map['jumlahOrang'],

@@ -29,7 +29,16 @@ dependencies:
   
   # QR Code (FIXED VERSION)
   qr_flutter: ^4.1.0
-  
+
+    # PDF & Export
+  pdf: ^3.10.8
+  printing: ^5.12.0
+  path_provider: ^2.1.2
+  share_plus: ^7.2.0
+
+  google_fonts: ^6.2.1
+  url_launcher: ^6.1.0
+
   # Media
   image_picker: ^1.0.4
   
@@ -50,5 +59,6 @@ flutter:
     - assets/images/thekelan.jpg
     - assets/images/wekas.jpg
     - assets/images/suwanting.jpeg
+    - assets/images/merbabu.jpg
 
   generate: true

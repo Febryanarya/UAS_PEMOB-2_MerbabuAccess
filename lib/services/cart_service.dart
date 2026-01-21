@@ -11,18 +11,23 @@ class CartService {
     final prefs = await SharedPreferences.getInstance();
     final List<CartItem> cartItems = await getCartItems();
     
-    // Check if item already exists
-    final existingIndex = cartItems.indexWhere(
-      (cartItem) => cartItem.paketId == item.paketId 
-          && _isSameDate(cartItem.tanggalBooking, item.tanggalBooking)
-    );
+    final existingIndex = cartItems.indexWhere((cartItem) => 
+        cartItem.paketId == item.paketId && 
+        _isSameDate(cartItem.tanggalBooking, item.tanggalBooking));
     
     if (existingIndex != -1) {
-      // Update quantity if exists
-      cartItems[existingIndex].jumlahOrang += item.jumlahOrang;
+      // Update quantity if exists - TANPA copyWith
+      cartItems[existingIndex] = CartItem(
+        paketId: cartItems[existingIndex].paketId,
+        paketName: cartItems[existingIndex].paketName,
+        paketRoute: cartItems[existingIndex].paketRoute,
+        paketPrice: cartItems[existingIndex].paketPrice,
+        imageUrl: cartItems[existingIndex].imageUrl,
+        tanggalBooking: cartItems[existingIndex].tanggalBooking,
+        jumlahOrang: cartItems[existingIndex].jumlahOrang + item.jumlahOrang,
+      );
       cartItems[existingIndex].updateTotal();
     } else {
-      // Add new item
       cartItems.add(item);
     }
     
@@ -40,6 +45,7 @@ class CartService {
       final List<dynamic> cartList = json.decode(cartJson);
       return cartList.map((item) => CartItem.fromMap(item)).toList();
     } catch (e) {
+      await clearCart();
       return [];
     }
   }
@@ -48,11 +54,9 @@ class CartService {
   Future<void> removeFromCart(String paketId, DateTime tanggalBooking) async {
     final prefs = await SharedPreferences.getInstance();
     final List<CartItem> cartItems = await getCartItems();
-    cartItems.removeWhere(
-      (item) => item.paketId == paketId 
-          && _isSameDate(item.tanggalBooking, tanggalBooking)
-    );
-    
+    cartItems.removeWhere((item) => 
+        item.paketId == paketId && 
+        _isSameDate(item.tanggalBooking, tanggalBooking));
     await _saveCart(cartItems, prefs);
   }
 
@@ -64,16 +68,23 @@ class CartService {
   ) async {
     final prefs = await SharedPreferences.getInstance();
     final List<CartItem> cartItems = await getCartItems();
-    final index = cartItems.indexWhere(
-      (item) => item.paketId == paketId 
-          && _isSameDate(item.tanggalBooking, tanggalBooking)
-    );
+    final index = cartItems.indexWhere((item) => 
+        item.paketId == paketId && 
+        _isSameDate(item.tanggalBooking, tanggalBooking));
     
     if (index != -1) {
       if (newQuantity < 1) {
         cartItems.removeAt(index);
       } else {
-        cartItems[index].jumlahOrang = newQuantity;
+        cartItems[index] = CartItem(
+          paketId: cartItems[index].paketId,
+          paketName: cartItems[index].paketName,
+          paketRoute: cartItems[index].paketRoute,
+          paketPrice: cartItems[index].paketPrice,
+          imageUrl: cartItems[index].imageUrl,
+          tanggalBooking: cartItems[index].tanggalBooking,
+          jumlahOrang: newQuantity,
+        );
         cartItems[index].updateTotal();
       }
       await _saveCart(cartItems, prefs);
@@ -106,15 +117,14 @@ class CartService {
   Future<bool> itemExists(String paketId, DateTime tanggalBooking) async {
     final cartItems = await getCartItems();
     return cartItems.any((item) => 
-      item.paketId == paketId && _isSameDate(item.tanggalBooking, tanggalBooking)
-    );
+        item.paketId == paketId && 
+        _isSameDate(item.tanggalBooking, tanggalBooking));
   }
 
   // Save cart to SharedPreferences
   Future<void> _saveCart(List<CartItem> cartItems, SharedPreferences prefs) async {
     final List<Map<String, dynamic>> cartMaps = 
         cartItems.map((item) => item.toMap()).toList();
-    
     await prefs.setString(_cartKey, json.encode(cartMaps));
   }
 

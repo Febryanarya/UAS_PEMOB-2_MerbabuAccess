@@ -29,7 +29,8 @@ class WeatherData {
 
   factory WeatherData.fromJson(Map<String, dynamic> json) {
     return WeatherData(
-      location: json['name'] ?? 'Merbabu',
+      // 🔥 FIX UTAMA: lokasi DIKUNCI
+      location: 'Gunung Merbabu',
       temperature: (json['main']['temp'] as num).toDouble(),
       feelsLike: (json['main']['feels_like'] as num).toDouble(),
       tempMin: (json['main']['temp_min'] as num).toDouble(),
@@ -40,16 +41,18 @@ class WeatherData {
       description: json['weather'][0]['description'],
       icon: json['weather'][0]['icon'],
       windSpeed: (json['wind']['speed'] as num).toDouble(),
-      lastUpdated: DateTime.now().toString(),
+      lastUpdated: DateTime.now().toIso8601String(),
     );
   }
 
-  String get iconUrl => 'https://openweathermap.org/img/wn/$icon@2x.png';
+  String get iconUrl =>
+      'https://openweathermap.org/img/wn/$icon@2x.png';
 
+  // ===== LOGIKA CUACA (AMAN) =====
   bool get isStormy => condition.toLowerCase().contains('thunder');
   bool get isRainy => condition.toLowerCase().contains('rain');
-  bool get isWindy => windSpeed > 20;
+  bool get isWindy => windSpeed > 10; // m/s
   bool get isCold => temperature < 10;
-  bool get isGoodWeather => 
+  bool get isGoodWeather =>
       !isStormy && !isRainy && !isWindy && temperature >= 10 && temperature <= 25;
 }

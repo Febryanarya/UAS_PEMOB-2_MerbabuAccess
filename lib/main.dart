@@ -1,10 +1,11 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/date_symbol_data_local.dart'; // ✅ TAMBAH INI
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routes/app_routes.dart';
+import 'providers/cart_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/home/home_screen.dart';
@@ -19,13 +20,18 @@ import 'screens/weather/weather_screen.dart';
 import 'screens/splash/splash_screen.dart';
 import 'models/paket_pendakian.dart';
 import 'models/booking_model.dart';
-import 'services/cart_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // ✅ INISIALISASI FIREBASE
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // ✅ INISIALISASI FORMAT TANGGAL INDONESIA (FIX ERROR)
+  await initializeDateFormatting('id_ID', null);
+  
   runApp(const MerbabuAccessApp());
 }
 
@@ -34,12 +40,15 @@ class MerbabuAccessApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Provider<CartService>(
-      create: (_) => CartService(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'MerbabuAccess',
         theme: AppTheme.lightTheme,
+        themeMode: ThemeMode.light,
         initialRoute: AppRoutes.splash,
         routes: {
           AppRoutes.splash: (context) => const SplashScreen(),
@@ -58,23 +67,67 @@ class MerbabuAccessApp extends StatelessWidget {
           AppRoutes.profile: (context) => const ProfileScreen(),
           AppRoutes.weather: (context) => const WeatherScreen(),
           AppRoutes.cart: (context) => const CartScreen(),
-          AppRoutes.checkout: (context) => const CheckoutScreen(),
+          AppRoutes.checkout: (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            return CheckoutScreen(args: args as Map<String, dynamic>?);
+          },
           AppRoutes.ticket: (context) {
             final args = ModalRoute.of(context)?.settings.arguments;
             if (args == null || args is! Booking) {
               return Scaffold(
-                appBar: AppBar(title: const Text('Error')),
-                body: const Center(child: Text('Data tiket tidak valid')),
+                appBar: AppBar(
+                  title: const Text('Error'),
+                  backgroundColor: Colors.red,
+                ),
+                body: const Center(
+                  child: Text('Data tiket tidak valid'),
+                ),
               );
             }
             return TicketScreen(booking: args);
           },
         },
+        // Optimasi untuk mencegah text scaling issues
+        builder: (context, child) {
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaleFactor: 1.0,
+            ),
+            child: child!,
+          );
+        },
+        // Error handler untuk route yang tidak ditemukan
         onUnknownRoute: (settings) {
           return MaterialPageRoute(
             builder: (context) => Scaffold(
+              appBar: AppBar(
+                title: const Text('Halaman Tidak Ditemukan'),
+                backgroundColor: Colors.red,
+              ),
               body: Center(
-                child: Text('Route ${settings.name} tidak ditemukan'),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 50, color: Colors.red),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Route "${settings.name}" tidak ditemukan',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        AppRoutes.home,
+                        (route) => false,
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                      ),
+                      child: const Text('Kembali ke Home'),
+                    ),
+                  ],
+                ),
               ),
             ),
           );

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:merbabuaccess_app/screens/booking/riwayat_booking_screen.dart';
+import 'package:provider/provider.dart';
+import '../../providers/cart_provider.dart';
 import '../../services/paket_service.dart';
 import '../../models/paket_pendakian.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_theme.dart';
-import '../profile/profile_screen.dart';
+import '../booking/riwayat_booking_screen.dart'; // ✅ IMPORT LANGSUNG
+import '../profile/profile_screen.dart'; // ✅ IMPORT LANGSUNG
 import '../weather/weather_screen.dart';
 import 'home_content.dart';
 
@@ -22,21 +24,28 @@ class _HomeScreenState extends State<HomeScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   User? _currentUser;
   
-  // ✅ VARIABEL UNTUK BOTTOM NAVIGATION
   int _selectedIndex = 0;
   
-  // ✅ LIST SCREEN UNTUK BOTTOM NAV
-  final List<Widget> _widgetOptions = [
-    const HomeContent(), // Home Content
-    const RiwayatBookingScreen(), // Riwayat Screen
-    const ProfileScreen(), // Profile Screen
-  ];
+  // ✅ SIMPLE SCREEN LIST (TANPA LAZY LOADING KOMPLEKS)
+  final List<Widget> _widgetOptions = [];
 
   @override
   void initState() {
     super.initState();
     _paketFuture = _paketService.fetchPaketPendakian();
     _currentUser = _auth.currentUser;
+    
+    // ✅ INITIALIZE SCREENS DENGAN BENAR
+    _widgetOptions.addAll([
+      const HomeContent(),
+      const RiwayatBookingScreen(), // ✅ LANGSUNG, TANPA WRAPPER
+      const ProfileScreen(), // ✅ LANGSUNG, TANPA WRAPPER
+    ]);
+    
+    // Load cart count
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CartProvider>().loadCartCount();
+    });
   }
 
   Future<void> _logout() async {
@@ -67,7 +76,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ✅ HANDLE BOTTOM NAV TAP
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -97,24 +105,28 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 2,
         centerTitle: false,
         actions: [
-          // ✅ ICON CART
-          IconButton(
-            icon: Badge(
-              label: Text('3'), // TODO: Get from cart provider
-              backgroundColor: Colors.red,
-              textColor: Colors.white,
-              smallSize: 18,
-              child: const Icon(Icons.shopping_cart_outlined),
-            ),
-            onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.cart);
+          Consumer<CartProvider>(
+            builder: (context, cartProvider, child) {
+              return IconButton(
+                icon: Badge(
+                  label: Text('${cartProvider.itemCount}'),
+                  isLabelVisible: cartProvider.itemCount > 0,
+                  backgroundColor: Colors.red,
+                  textColor: Colors.white,
+                  smallSize: 18,
+                  child: const Icon(Icons.shopping_cart_outlined),
+                ),
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRoutes.cart);
+                },
+                tooltip: 'Keranjang',
+              );
             },
-            tooltip: 'Keranjang',
           ),
-          // ✅ NOTIFICATION ICON
+          
           IconButton(
             icon: Badge(
-              label: Text('2'), // TODO: Get from notification count
+              label: const Text('2'),
               backgroundColor: Colors.orange,
               textColor: Colors.white,
               smallSize: 18,
@@ -136,13 +148,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      // ✅ DRAWER MENU (POLISHED)
+      
       drawer: _buildDrawer(),
       
-      // ✅ BODY BERDASARKAN BOTTOM NAV INDEX
-      body: _widgetOptions.elementAt(_selectedIndex),
+      // ✅ GUNAKAN IndexedStack UNTUK SWITCH SCREEN
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _widgetOptions,
+      ),
       
-      // ✅ FLOATING ACTION BUTTON FOR WEATHER
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.pushNamed(context, AppRoutes.weather);
@@ -158,7 +172,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       
-      // ✅ ENHANCED BOTTOM NAVIGATION BAR
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -214,7 +227,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ✅ ENHANCED DRAWER WIDGET
   Widget _buildDrawer() {
     return Drawer(
       shape: const RoundedRectangleBorder(
@@ -223,13 +235,12 @@ class _HomeScreenState extends State<HomeScreen> {
           bottomRight: Radius.circular(20),
         ),
       ),
-      elevation: 16,
+      elevation: 8,
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          // ✅ ENHANCED USER HEADER
           Container(
-            height: 200,
+            height: 180,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [AppTheme.primaryDark, AppTheme.primaryColor],
@@ -237,69 +248,59 @@ class _HomeScreenState extends State<HomeScreen> {
                 end: Alignment.bottomRight,
               ),
               borderRadius: const BorderRadius.only(
-                bottomRight: Radius.circular(40),
+                bottomRight: Radius.circular(30),
               ),
             ),
-            child: Stack(
-              children: [
-                Positioned(
-                  right: -20,
-                  top: -20,
-                  child: Icon(
-                    Icons.terrain,
-                    size: 120,
-                    color: Colors.white.withOpacity(0.1),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  CircleAvatar(
+                    radius: 36,
+                    backgroundColor: Colors.white,
+                    child: Text(
+                      (_currentUser?.displayName?.isNotEmpty == true 
+                          ? _currentUser!.displayName![0].toUpperCase() 
+                          : _currentUser?.email?.isNotEmpty == true
+                              ? _currentUser!.email![0].toUpperCase()
+                              : 'U'),
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor: Colors.white,
-                        child: Text(
-                          (_currentUser?.displayName?.isNotEmpty == true 
-                              ? _currentUser!.displayName![0].toUpperCase() 
-                              : _currentUser?.email?.isNotEmpty == true
-                                  ? _currentUser!.email![0].toUpperCase()
-                                  : 'U'),
-                          style: const TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryColor,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _currentUser?.displayName ?? 'User Merbabu',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _currentUser?.email ?? 'user@merbabuaccess.com',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 12),
+                  Text(
+                    _currentUser?.displayName ?? 'User Merbabu',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    _currentUser?.email ?? 'user@merbabuaccess.com',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
           ),
           
-          // ✅ MENU ITEMS WITH BETTER STYLING
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Column(
               children: [
                 _buildDrawerItem(
@@ -309,9 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   isActive: _selectedIndex == 0,
                   onTap: () {
                     Navigator.pop(context);
-                    setState(() {
-                      _selectedIndex = 0;
-                    });
+                    setState(() => _selectedIndex = 0);
                   },
                 ),
                 _buildDrawerItem(
@@ -321,21 +320,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   isActive: _selectedIndex == 1,
                   onTap: () {
                     Navigator.pop(context);
-                    setState(() {
-                      _selectedIndex = 1;
-                    });
+                    setState(() => _selectedIndex = 1);
                   },
                 ),
                 _buildDrawerItem(
-                  icon: Icons.person_outline,
+                  icon: Icons.person_outlined,
                   activeIcon: Icons.person,
                   label: 'Profil Saya',
                   isActive: _selectedIndex == 2,
                   onTap: () {
                     Navigator.pop(context);
-                    setState(() {
-                      _selectedIndex = 2;
-                    });
+                    setState(() => _selectedIndex = 2);
                   },
                 ),
                 _buildDrawerItem(
@@ -367,9 +362,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         content: const Text('Fitur pengaturan akan segera hadir'),
                         backgroundColor: AppTheme.infoColor,
                         behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
                       ),
                     );
                   },
@@ -380,45 +372,45 @@ class _HomeScreenState extends State<HomeScreen> {
           
           const Divider(height: 20, thickness: 1),
           
-          // ✅ LOGOUT BUTTON
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             child: ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
+              leading: const Icon(Icons.logout, color: Colors.red, size: 22),
               title: const Text(
                 'Keluar',
                 style: TextStyle(
                   color: Colors.red,
                   fontWeight: FontWeight.w600,
+                  fontSize: 14,
                 ),
               ),
               onTap: _logout,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
               ),
               tileColor: Colors.red.withOpacity(0.05),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
           ),
           
-          // ✅ FOOTER DRAWER (ENHANCED)
           Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                const Divider(height: 30),
+                const Divider(height: 20),
                 Text(
                   'MerbabuAccess v1.0',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     color: Colors.grey[600],
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   'Your Gateway to Mount Merbabu',
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 9,
                     color: Colors.grey[500],
                     fontStyle: FontStyle.italic,
                   ),
@@ -431,7 +423,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ✅ HELPER: DRAWER ITEM BUILDER
   Widget _buildDrawerItem({
     required IconData icon,
     required IconData activeIcon,
@@ -443,18 +434,20 @@ class _HomeScreenState extends State<HomeScreen> {
       leading: Icon(
         isActive ? activeIcon : icon,
         color: isActive ? AppTheme.primaryColor : Colors.grey[700],
+        size: 22,
       ),
       title: Text(
         label,
         style: TextStyle(
+          fontSize: 13,
           fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
           color: isActive ? AppTheme.primaryColor : Colors.grey[800],
         ),
       ),
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
       ),
       tileColor: isActive ? AppTheme.primaryColor.withOpacity(0.1) : null,
     );

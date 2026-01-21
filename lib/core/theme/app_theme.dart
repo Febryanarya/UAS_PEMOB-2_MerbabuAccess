@@ -193,6 +193,7 @@ class AppTheme {
           color: textOnPrimary,
         ),
       ),
+      
 
       // Text Theme
       textTheme: const TextTheme(

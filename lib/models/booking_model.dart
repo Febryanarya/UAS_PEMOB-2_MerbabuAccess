@@ -1,42 +1,43 @@
+// lib/models/booking_model.dart
 class Booking {
   final String id;
   final String userId;
   final String userName;
   final String userEmail;
-  final String userPhone; // ✅ Tambahan
+  final String userPhone;
   final String paketId;
   final String paketName;
-  final String paketRoute; // ✅ sudah ada
-  final int paketPrice; // ✅ tetap int
+  final String paketRoute;
+  final double paketPrice; // ✅ Tetap double
   final DateTime tanggalBooking;
   final int jumlahOrang;
   final double totalHarga;
-  final String paymentMethod; // ✅ Tambahan
+  final String paymentMethod;
   final String status;
   final DateTime createdAt;
-  final String? specialRequest; // ✅ Tambahan (opsional)
-  final String? emergencyContact; // ✅ Tambahan (opsional)
-  final String? idNumber; // ✅ Tambahan (opsional)
+  final String? specialRequest;
+  final String? emergencyContact;
+  final String? idNumber;
 
   Booking({
     this.id = '',
     required this.userId,
     required this.userName,
     required this.userEmail,
-    required this.userPhone, // ✅ Tambahan
+    required this.userPhone,
     required this.paketId,
     required this.paketName,
-    required this.paketRoute, // ✅ tetap
-    required this.paketPrice, // ✅ tetap
+    required this.paketRoute,
+    required this.paketPrice, // ✅ double
     required this.tanggalBooking,
     required this.jumlahOrang,
     required this.totalHarga,
-    required this.paymentMethod, // ✅ Tambahan
+    required this.paymentMethod,
     required this.status,
     required this.createdAt,
-    this.specialRequest, // ✅ Tambahan
-    this.emergencyContact, // ✅ Tambahan
-    this.idNumber, // ✅ Tambahan
+    this.specialRequest,
+    this.emergencyContact,
+    this.idNumber,
   });
 
   Map<String, dynamic> toMap() {
@@ -44,20 +45,20 @@ class Booking {
       'userId': userId,
       'userName': userName,
       'userEmail': userEmail,
-      'userPhone': userPhone, // ✅ Tambahan
+      'userPhone': userPhone,
       'paketId': paketId,
       'paketName': paketName,
-      'paketRoute': paketRoute, // ✅ tetap
-      'paketPrice': paketPrice,
+      'paketRoute': paketRoute,
+      'paketPrice': paketPrice, // ✅ double
       'tanggalBooking': tanggalBooking.toIso8601String(),
       'jumlahOrang': jumlahOrang,
       'totalHarga': totalHarga,
-      'paymentMethod': paymentMethod, // ✅ Tambahan
+      'paymentMethod': paymentMethod,
       'status': status,
       'createdAt': createdAt.toIso8601String(),
-      'specialRequest': specialRequest, // ✅ Tambahan
-      'emergencyContact': emergencyContact, // ✅ Tambahan
-      'idNumber': idNumber, // ✅ Tambahan
+      'specialRequest': specialRequest,
+      'emergencyContact': emergencyContact,
+      'idNumber': idNumber,
     };
   }
 
@@ -67,20 +68,20 @@ class Booking {
       userId: map['userId'] ?? '',
       userName: map['userName'] ?? '',
       userEmail: map['userEmail'] ?? '',
-      userPhone: map['userPhone'] ?? '', // ✅ Tambahan
+      userPhone: map['userPhone'] ?? '',
       paketId: map['paketId'] ?? '',
       paketName: map['paketName'] ?? '',
       paketRoute: map['paketRoute'] ?? '',
-      paketPrice: map['paketPrice'] ?? 0,
+      paketPrice: (map['paketPrice'] as num).toDouble(), // ✅ Convert ke double
       tanggalBooking: DateTime.parse(map['tanggalBooking']),
-      jumlahOrang: map['jumlahOrang'] ?? 0,
+      jumlahOrang: (map['jumlahOrang'] as num).toInt(), // ✅ Convert ke int dengan benar
       totalHarga: (map['totalHarga'] as num).toDouble(),
-      paymentMethod: map['paymentMethod'] ?? 'bank_transfer', // ✅ Tambahan
+      paymentMethod: map['paymentMethod'] ?? 'bank_transfer',
       status: map['status'] ?? 'pending',
       createdAt: DateTime.parse(map['createdAt']),
-      specialRequest: map['specialRequest'], // ✅ Tambahan
-      emergencyContact: map['emergencyContact'], // ✅ Tambahan
-      idNumber: map['idNumber'], // ✅ Tambahan
+      specialRequest: map['specialRequest'],
+      emergencyContact: map['emergencyContact'],
+      idNumber: map['idNumber'],
     );
   }
 }

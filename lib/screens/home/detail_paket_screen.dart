@@ -24,6 +24,7 @@ class _DetailPaketScreenState extends State<DetailPaketScreen>
   bool _isAddingToCart = false;
   final PageController _imageController = PageController();
   int _currentImageIndex = 0;
+  final ScrollController _scrollController = ScrollController();
 
   // Simulasi gallery images
   final List<String> _galleryImages = [
@@ -42,6 +43,7 @@ class _DetailPaketScreenState extends State<DetailPaketScreen>
   void dispose() {
     _tabController.dispose();
     _imageController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -101,233 +103,238 @@ class _DetailPaketScreenState extends State<DetailPaketScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          CustomScrollView(
-            slivers: [
-              // ✅ HERO IMAGE SLIVER
-              SliverAppBar(
-                expandedHeight: 280,
-                collapsedHeight: kToolbarHeight,
-                pinned: true,
-                floating: false,
-                snap: false,
-                backgroundColor: AppTheme.primaryColor,
-                foregroundColor: Colors.white,
-                flexibleSpace: FlexibleSpaceBar(
-                  collapseMode: CollapseMode.pin,
-                  background: _buildHeroImage(),
-                  titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-                  title: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      widget.paket.route.toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1,
+      body: SafeArea(
+        bottom: false,
+        child: Stack(
+          children: [
+            NestedScrollView(
+              controller: _scrollController,
+              physics: const BouncingScrollPhysics(),
+              headerSliverBuilder: (context, innerBoxIsScrolled) {
+                return [
+                  // ✅ HERO IMAGE SLIVER
+                  SliverAppBar(
+                    expandedHeight: 280,
+                    collapsedHeight: kToolbarHeight + MediaQuery.of(context).padding.top,
+                    pinned: true,
+                    floating: true,
+                    snap: false,
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    flexibleSpace: FlexibleSpaceBar(
+                      collapseMode: CollapseMode.pin,
+                      background: _buildHeroImage(),
+                      titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+                      title: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          widget.paket.route.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                leading: IconButton(
-                  icon: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.3),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.arrow_back, size: 20),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                actions: [
-                  IconButton(
-                    icon: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.3),
-                        shape: BoxShape.circle,
+                    leading: IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.arrow_back, size: 20),
                       ),
-                      child: const Icon(Icons.share, size: 20),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                    onPressed: () {
-                      // Share functionality
-                    },
-                  ),
-                  IconButton(
-                    icon: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.3),
-                        shape: BoxShape.circle,
+                    actions: [
+                      IconButton(
+                        icon: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.3),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.share, size: 20),
+                        ),
+                        onPressed: () {
+                          // Share functionality
+                        },
                       ),
-                      child: const Icon(Icons.favorite_border, size: 20),
-                    ),
-                    onPressed: () {
-                      // Favorite functionality
-                    },
+                      IconButton(
+                        icon: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.3),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.favorite_border, size: 20),
+                        ),
+                        onPressed: () {
+                          // Favorite functionality
+                        },
+                      ),
+                    ],
                   ),
-                ],
-              ),
-
-              // ✅ PACKET HEADER INFO
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                ];
+              },
+              body: Column(
+                children: [
+                  // ✅ PACKET HEADER INFO
+                  Container(
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.paket.name,
-                                  style: AppTheme.headlineSmall.copyWith(
-                                    color: AppTheme.textPrimary,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      widget.paket.name,
+                                      style: AppTheme.headlineSmall.copyWith(
+                                        color: AppTheme.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.terrain,
+                                          size: 16,
+                                          color: AppTheme.textSecondary,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Gunung Merbabu',
+                                          style: AppTheme.bodyMedium.copyWith(
+                                            color: AppTheme.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: AppTheme.primaryColor,
+                                    width: 1,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                                Row(
+                                child: Column(
                                   children: [
-                                    Icon(
-                                      Icons.terrain,
-                                      size: 16,
-                                      color: AppTheme.textSecondary,
-                                    ),
-                                    const SizedBox(width: 4),
                                     Text(
-                                      'Gunung Merbabu',
-                                      style: AppTheme.bodyMedium.copyWith(
+                                      'Rp ${_formatPrice(widget.paket.price)}',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.primaryColor,
+                                      ),
+                                    ),
+                                    Text(
+                                      'per orang',
+                                      style: AppTheme.labelSmall.copyWith(
                                         color: AppTheme.textSecondary,
                                       ),
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: AppTheme.primaryColor,
-                                width: 1,
                               ),
-                            ),
-                            child: Column(
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          // ✅ RATING & REVIEW
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: AppTheme.cardDecoration,
+                            child: Row(
                               children: [
-                                Text(
-                                  'Rp ${_formatPrice(widget.paket.price)}',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.primaryColor,
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: Colors.amber.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.star,
+                                        size: 16,
+                                        color: Colors.amber[700],
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '4.8/5.0',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.amber[800],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                Text(
-                                  'per orang',
-                                  style: AppTheme.labelSmall.copyWith(
-                                    color: AppTheme.textSecondary,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Ulasan Terbaik',
+                                        style: AppTheme.labelMedium.copyWith(
+                                          color: AppTheme.textSecondary,
+                                        ),
+                                      ),
+                                      Text(
+                                        '250+ pendaki puas',
+                                        style: AppTheme.bodySmall.copyWith(
+                                          color: AppTheme.textSecondary,
+                                        ),
+                                      ),
+                                    ],
                                   ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_right,
+                                  color: AppTheme.textSecondary,
                                 ),
                               ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-
-                      // ✅ RATING & REVIEW
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: AppTheme.cardDecoration,
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.amber.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: Colors.amber.withOpacity(0.3),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.star,
-                                    size: 16,
-                                    color: Colors.amber[700],
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '4.8/5.0',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.amber[800],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Ulasan Terbaik',
-                                    style: AppTheme.labelMedium.copyWith(
-                                      color: AppTheme.textSecondary,
-                                    ),
-                                  ),
-                                  Text(
-                                    '250+ pendaki puas',
-                                    style: AppTheme.bodySmall.copyWith(
-                                      color: AppTheme.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Icon(
-                              Icons.chevron_right,
-                              color: AppTheme.textSecondary,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
 
-              // ✅ TAB BAR HEADER
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _TabBarDelegate(
-                  tabController: _tabController,
-                  child: Container(
+                  // ✅ TAB BAR HEADER
+                  Container(
                     color: Colors.white,
                     child: TabBar(
                       controller: _tabController,
@@ -347,36 +354,31 @@ class _DetailPaketScreenState extends State<DetailPaketScreen>
                       ],
                     ),
                   ),
-                ),
-              ),
 
-              // ✅ TAB VIEW CONTENT
-              SliverFillRemaining(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildDescriptionTab(),
-                    _buildFacilitiesTab(),
-                    _buildRequirementsTab(),
-                  ],
-                ),
+                  // ✅ TAB VIEW CONTENT
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildDescriptionTab(),
+                        _buildFacilitiesTab(),
+                        _buildRequirementsTab(),
+                      ],
+                    ),
+                  ),
+                ],
               ),
+            ),
 
-              // ✅ SPACER FOR STICKY PANEL
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 100),
-              ),
-            ],
-          ),
-
-          // ✅ STICKY BOOKING PANEL (BOTTOM)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _buildBookingPanel(),
-          ),
-        ],
+            // ✅ STICKY BOOKING PANEL (BOTTOM)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: _buildBookingPanel(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -397,6 +399,8 @@ class _DetailPaketScreenState extends State<DetailPaketScreen>
             return Image.asset(
               _galleryImages[index],
               fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
             );
           },
         ),
@@ -411,7 +415,9 @@ class _DetailPaketScreenState extends State<DetailPaketScreen>
                 colors: [
                   Colors.black.withOpacity(0.6),
                   Colors.transparent,
+                  Colors.transparent,
                 ],
+                stops: const [0.0, 0.5, 1.0],
               ),
             ),
           ),
@@ -447,6 +453,8 @@ class _DetailPaketScreenState extends State<DetailPaketScreen>
   // ✅ DESCRIPTION TAB
   Widget _buildDescriptionTab() {
     return SingleChildScrollView(
+      controller: ScrollController(),
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -516,6 +524,8 @@ class _DetailPaketScreenState extends State<DetailPaketScreen>
               _buildDifficultyLevel('Expert', 5, total: 5),
             ],
           ),
+          
+          const SizedBox(height: 80), // Extra space for bottom panel
         ],
       ),
     );
@@ -533,6 +543,7 @@ class _DetailPaketScreenState extends State<DetailPaketScreen>
     ];
 
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -612,6 +623,8 @@ class _DetailPaketScreenState extends State<DetailPaketScreen>
               _buildExcludedItem('Tips untuk guide dan porter'),
             ],
           ),
+          
+          const SizedBox(height: 80), // Extra space for bottom panel
         ],
       ),
     );
@@ -620,6 +633,7 @@ class _DetailPaketScreenState extends State<DetailPaketScreen>
   // ✅ REQUIREMENTS TAB
   Widget _buildRequirementsTab() {
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -710,6 +724,8 @@ class _DetailPaketScreenState extends State<DetailPaketScreen>
               ],
             ),
           ),
+          
+          const SizedBox(height: 80), // Extra space for bottom panel
         ],
       ),
     );
@@ -718,7 +734,7 @@ class _DetailPaketScreenState extends State<DetailPaketScreen>
   // ✅ BOOKING PANEL (STICKY BOTTOM)
   Widget _buildBookingPanel() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -749,6 +765,7 @@ class _DetailPaketScreenState extends State<DetailPaketScreen>
                         color: AppTheme.textSecondary,
                       ),
                     ),
+                    const SizedBox(height: 4),
                     InkWell(
                       onTap: () async {
                         final pickedDate = await showDatePicker(
@@ -813,6 +830,7 @@ class _DetailPaketScreenState extends State<DetailPaketScreen>
                         color: AppTheme.textSecondary,
                       ),
                     ),
+                    const SizedBox(height: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
@@ -1190,30 +1208,5 @@ class _DetailPaketScreenState extends State<DetailPaketScreen>
   // ✅ HELPER: FORMAT PRICE
   String _formatPrice(double price) {
     return NumberFormat('#,##0', 'id_ID').format(price);
-  }
-}
-
-// ✅ TAB BAR DELEGATE FOR PERSISTENT HEADER
-class _TabBarDelegate extends SliverPersistentHeaderDelegate {
-  final TabController tabController;
-  final Widget child;
-
-  _TabBarDelegate({required this.tabController, required this.child});
-
-  @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return child;
-  }
-
-  @override
-  double get maxExtent => 48;
-
-  @override
-  double get minExtent => 48;
-
-  @override
-  bool shouldRebuild(_TabBarDelegate oldDelegate) {
-    return tabController != oldDelegate.tabController || child != oldDelegate.child;
   }
 }

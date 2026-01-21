@@ -65,8 +65,9 @@ class _HomeContentState extends State<HomeContent> {
       child: CustomScrollView(
         slivers: [
           // ✅ HERO SECTION
+  
           SliverAppBar(
-            expandedHeight: 180,
+            expandedHeight: 200,
             collapsedHeight: 0,
             toolbarHeight: 0,
             pinned: false,
@@ -90,7 +91,7 @@ class _HomeContentState extends State<HomeContent> {
                 ),
                 child: Stack(
                   children: [
-                    // Background Pattern
+                    // Background Icons
                     Positioned(
                       right: 20,
                       top: 20,
@@ -109,14 +110,15 @@ class _HomeContentState extends State<HomeContent> {
                         color: Colors.white.withOpacity(0.15),
                       ),
                     ),
-                    
-                    // Content
+
+                    // ================= CONTENT =================
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
                         vertical: 40,
                       ),
                       child: Column(
+                        mainAxisSize: MainAxisSize.min, // 🔥 FIX OVERFLOW
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -127,17 +129,17 @@ class _HomeContentState extends State<HomeContent> {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           Text(
                             'MerbabuAccess',
                             style: const TextStyle(
                               fontSize: 32,
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              height: 1.2,
+                              height: 1.1, // 🔥 diperkecil
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 8),
                           Text(
                             'Temukan pengalaman pendakian tak terlupakan di Gunung Merbabu',
                             style: TextStyle(
@@ -145,6 +147,7 @@ class _HomeContentState extends State<HomeContent> {
                               color: Colors.white.withOpacity(0.85),
                             ),
                             maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
