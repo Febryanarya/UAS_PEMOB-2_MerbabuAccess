@@ -479,11 +479,13 @@ class _RiwayatBookingScreenState extends State<RiwayatBookingScreen> {
             ElevatedButton.icon(
               icon: const Icon(Icons.explore),
               label: const Text('Jelajahi Paket'),
-              // ✅ FIX: Gunakan Navigator.pop untuk kembali ke home dari bottom nav
               onPressed: () {
-                // Jika screen ini dibuka via bottom navigation di HomeScreen,
-                // cukup pop untuk kembali ke Home (index 0)
-                Navigator.pop(context);
+                // ✅ NAVIGASI LANGSUNG KE HOME SCREEN DENGAN CLEAN STACK
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  AppRoutes.home,
+                  (route) => false, // Hapus semua route sebelumnya
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryColor,

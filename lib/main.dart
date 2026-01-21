@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/date_symbol_data_local.dart'; // ✅ TAMBAH INI
+import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routes/app_routes.dart';
@@ -11,7 +11,7 @@ import 'screens/auth/register_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/home/detail_paket_screen.dart';
 import 'screens/booking/booking_form_screen.dart';
-import 'screens/booking/riwayat_booking_screen.dart';
+import 'screens/booking/riwayat_booking_screen.dart'; // ✅ BISA DIHAPUS
 import 'screens/booking/cart_screen.dart';
 import 'screens/booking/checkout_screen.dart';
 import 'screens/booking/ticket_screen.dart';
@@ -24,12 +24,10 @@ import 'models/booking_model.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // ✅ INISIALISASI FIREBASE
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
-  // ✅ INISIALISASI FORMAT TANGGAL INDONESIA (FIX ERROR)
   await initializeDateFormatting('id_ID', null);
   
   runApp(const MerbabuAccessApp());
@@ -63,7 +61,8 @@ class MerbabuAccessApp extends StatelessWidget {
             final paket = ModalRoute.of(context)!.settings.arguments as PaketPendakian;
             return BookingFormScreen(paket: paket);
           },
-          AppRoutes.riwayatBooking: (context) => const RiwayatBookingScreen(),
+          // ❌ HAPUS INI: AppRoutes.riwayatBooking sudah ada di HomeScreen
+          // AppRoutes.riwayatBooking: (context) => const RiwayatBookingScreen(),
           AppRoutes.profile: (context) => const ProfileScreen(),
           AppRoutes.weather: (context) => const WeatherScreen(),
           AppRoutes.cart: (context) => const CartScreen(),
@@ -87,7 +86,6 @@ class MerbabuAccessApp extends StatelessWidget {
             return TicketScreen(booking: args);
           },
         },
-        // Optimasi untuk mencegah text scaling issues
         builder: (context, child) {
           return MediaQuery(
             data: MediaQuery.of(context).copyWith(
@@ -96,7 +94,6 @@ class MerbabuAccessApp extends StatelessWidget {
             child: child!,
           );
         },
-        // Error handler untuk route yang tidak ditemukan
         onUnknownRoute: (settings) {
           return MaterialPageRoute(
             builder: (context) => Scaffold(

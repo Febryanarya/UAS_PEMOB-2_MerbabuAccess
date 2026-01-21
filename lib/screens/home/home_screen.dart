@@ -6,8 +6,8 @@ import '../../services/paket_service.dart';
 import '../../models/paket_pendakian.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/theme/app_theme.dart';
-import '../booking/riwayat_booking_screen.dart'; // ✅ IMPORT LANGSUNG
-import '../profile/profile_screen.dart'; // ✅ IMPORT LANGSUNG
+import '../booking/riwayat_booking_screen.dart';
+import '../profile/profile_screen.dart';
 import '../weather/weather_screen.dart';
 import 'home_content.dart';
 
@@ -26,7 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   
   int _selectedIndex = 0;
   
-  // ✅ SIMPLE SCREEN LIST (TANPA LAZY LOADING KOMPLEKS)
+  // ✅ SIMPLE SCREEN LIST
   final List<Widget> _widgetOptions = [];
 
   @override
@@ -35,11 +35,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _paketFuture = _paketService.fetchPaketPendakian();
     _currentUser = _auth.currentUser;
     
-    // ✅ INITIALIZE SCREENS DENGAN BENAR
+    // ✅ INITIALIZE SCREENS
     _widgetOptions.addAll([
       const HomeContent(),
-      const RiwayatBookingScreen(), // ✅ LANGSUNG, TANPA WRAPPER
-      const ProfileScreen(), // ✅ LANGSUNG, TANPA WRAPPER
+      const RiwayatBookingScreen(), // ✅ TANPA CALLBACK LAGI
+      const ProfileScreen(),
     ]);
     
     // Load cart count
@@ -151,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
       
       drawer: _buildDrawer(),
       
-      // ✅ GUNAKAN IndexedStack UNTUK SWITCH SCREEN
+      // ✅ GUNAKAN IndexedStack
       body: IndexedStack(
         index: _selectedIndex,
         children: _widgetOptions,
