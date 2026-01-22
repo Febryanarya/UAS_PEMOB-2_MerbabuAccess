@@ -1,38 +1,105 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
-
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="merbabuaccess_app">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>merbabuaccess_app</title>
+  
+  <!-- ========== ✅ TAG PWA YANG WAJIB ========== -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#00796B">
+  <meta name="description" content="Aplikasi booking pendakian Gunung Merbabu - Pemesanan paket, informasi cuaca, dan panduan lengkap">
+  
+  <!-- ========== ✅ KONFIGURASI PWA ========== -->
   <link rel="manifest" href="manifest.json">
+  
+  <!-- ========== ✅ IOS CONFIG ========== -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MerbabuAccess">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  
+  <!-- ========== ✅ FAVICON & ICONS ========== -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="shortcut icon" href="favicon.png" type="image/png">
+  
+  <!-- ========== ✅ WINDOWS/MICROSOFT ========== -->
+  <meta name="msapplication-TileColor" content="#00796B">
+  <meta name="msapplication-TileImage" content="icons/Icon-144.png">
+  <meta name="msapplication-config" content="browserconfig.xml">
+  
+  <!-- ========== ✅ TWITTER/FACEBOOK ========== -->
+  <meta property="og:title" content="MerbabuAccess">
+  <meta property="og:description" content="Aplikasi booking pendakian Gunung Merbabu">
+  <meta property="og:image" content="icons/Icon-512.png">
+  <meta property="og:url" content="https://merbabuaccess.netlify.app">
+  <meta name="twitter:card" content="summary_large_image">
+  
+  <title>MerbabuAccess - Pendakian Digital Gunung Merbabu</title>
+  
+  <!-- ========== ✅ FLUTTER LOADING ========== -->
+  <style>
+    /* Loading screen while Flutter initializes */
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #00796B 0%, #004D40 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      text-align: center;
+    }
+    .loading-container {
+      max-width: 400px;
+      padding: 40px;
+    }
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 5px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+      margin: 0 auto 30px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    h1 {
+      margin: 0 0 15px 0;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    p {
+      margin: 0;
+      opacity: 0.9;
+      font-size: 16px;
+    }
+  </style>
 </head>
 <body>
+  <!-- Loading screen -->
+  <div class="loading-container" id="loading">
+    <div class="loading-spinner"></div>
+    <h1>MerbabuAccess</h1>
+    <p>Memuat aplikasi...</p>
+    <p style="font-size: 14px; margin-top: 20px;">"Your Gateway to Mount Merbabu" 🏔️</p>
+  </div>
+  
+  <!-- Flutter app -->
   <script src="flutter_bootstrap.js" async></script>
+  
+  <!-- Hide loading when app loads -->
+  <script>
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        document.getElementById('loading').style.display = 'none';
+      }, 2000);
+    });
+  </script>
 </body>
 </html>
