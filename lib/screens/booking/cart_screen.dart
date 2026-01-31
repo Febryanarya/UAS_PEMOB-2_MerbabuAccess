@@ -29,6 +29,7 @@ class _CartScreenState extends State<CartScreen> {
   Timer? _quantityUpdateTimer;
   final NumberFormat _priceFormatter = NumberFormat('#,##0', 'id_ID');
   final DateFormat _dateFormatter = DateFormat('dd MMM yyyy');
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -40,6 +41,7 @@ class _CartScreenState extends State<CartScreen> {
   void dispose() {
     _quantityUpdateTimer?.cancel();
     _voucherController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -48,7 +50,6 @@ class _CartScreenState extends State<CartScreen> {
       _cartFuture = _cartService.getCartItems();
     });
     await _calculateTotal();
-    // Update cart provider
     context.read<CartProvider>().refreshCart();
   }
 
@@ -100,7 +101,6 @@ class _CartScreenState extends State<CartScreen> {
 
     setState(() => _isApplyingVoucher = true);
 
-    // Simulate API call
     await Future.delayed(const Duration(milliseconds: 500));
 
     final isValid = _validateVoucher(voucherCode);
@@ -132,21 +132,21 @@ class _CartScreenState extends State<CartScreen> {
     });
   }
 
-Future<void> _clearCart() async {
-  final confirmed = await _showConfirmationDialog(
-    title: 'Kosongkan Keranjang',
-    message: 'Hapus semua item dari keranjang?',
-    confirmText: 'Kosongkan',
-    confirmColor: AppTheme.errorColor,
-  );
+  Future<void> _clearCart() async {
+    final confirmed = await _showConfirmationDialog(
+      title: 'Kosongkan Keranjang',
+      message: 'Hapus semua item dari keranjang?',
+      confirmText: 'Kosongkan',
+      confirmColor: AppTheme.errorColor,
+    );
 
-  if (confirmed) {
-    await _cartService.clearCart();
-    await _loadCart();
-    _showSuccessSnackbar('Keranjang berhasil dikosongkan');
-    context.read<CartProvider>().clearCart(); // METHOD SUDAH BENAR
+    if (confirmed) {
+      await _cartService.clearCart();
+      await _loadCart();
+      _showSuccessSnackbar('Keranjang berhasil dikosongkan');
+      context.read<CartProvider>().clearCart();
+    }
   }
-}
 
   void _proceedToCheckout() {
     if (_totalPrice == 0) {
@@ -224,7 +224,6 @@ Future<void> _clearCart() async {
 
   double get _finalPrice => _totalPrice - _discount;
 
-  // ============ PERUBAHAN 1: TAMBAH METHOD _goToBookingForm ============
   Future<void> _goToBookingForm(CartItem item) async {
     try {
       final paket = await _paketService.getPaketById(item.paketId);
@@ -235,7 +234,6 @@ Future<void> _clearCart() async {
           arguments: paket,
         );
         
-        // Info bahwa data dari cart bisa digunakan
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Buka form booking dari keranjang'),
@@ -269,60 +267,64 @@ Future<void> _clearCart() async {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          const _PromoBanner(),
-          Expanded(
-            child: FutureBuilder<List<CartItem>>(
-              future: _cartFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const _LoadingState();
-                }
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Gunakan LayoutBuilder untuk mendeteksi ukuran layar
+            final isSmallScreen = constraints.maxHeight < 600;
+            
+            return Column(
+              children: [
+                if (!isSmallScreen) const _PromoBanner(),
+                Expanded(
+                  child: FutureBuilder<List<CartItem>>(
+                    future: _cartFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const _LoadingState();
+                      }
 
-                if (snapshot.hasError) {
-                  return _ErrorState(onRetry: _loadCart);
-                }
+                      if (snapshot.hasError) {
+                        return _ErrorState(onRetry: _loadCart);
+                      }
 
-                final cartItems = snapshot.data ?? [];
-                if (cartItems.isEmpty) {
-                  return const _EmptyState();
-                }
+                      final cartItems = snapshot.data ?? [];
+                      if (cartItems.isEmpty) {
+                        return const _EmptyState();
+                      }
 
-                // ============ PERUBAHAN 2: UPDATE ListView.builder ============
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: cartItems.length,
-                  itemBuilder: (context, index) {
-                    final item = cartItems[index];
-                    return _CartItemCard(
-                      item: item,
-                      dateFormatter: _dateFormatter,
-                      priceFormatter: _priceFormatter,
-                      onUpdateQuantity: (cartItem, newQuantity) =>
-                          _updateQuantityDebounced(cartItem, newQuantity),
-                      onRemove: _removeItem,
-                      onTapItem: () => _goToPackageDetail(item),
-                      onBookNow: () => _goToBookingForm(item), // ✅ TAMBAH INI
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-          _CartSummary(
-            totalPrice: _totalPrice,
-            discount: _discount,
-            finalPrice: _finalPrice,
-            voucherController: _voucherController,
-            isApplyingVoucher: _isApplyingVoucher,
-            voucherApplied: _voucherApplied,
-            onApplyVoucher: _applyVoucher,
-            onRemoveVoucher: _removeVoucher,
-            onClearCart: _clearCart,
-            onCheckout: _proceedToCheckout,
-          ),
-        ],
+                      return _CartContent(
+                        cartItems: cartItems,
+                        isSmallScreen: isSmallScreen,
+                        scrollController: _scrollController,
+                        dateFormatter: _dateFormatter,
+                        priceFormatter: _priceFormatter,
+                        onUpdateQuantityDebounced: _updateQuantityDebounced,
+                        onRemove: _removeItem,
+                        onGoToPackageDetail: _goToPackageDetail,
+                        onGoToBookingForm: _goToBookingForm,
+                      );
+                    },
+                  ),
+                ),
+                // SUMMARY - DIPINDAH KE BOTTOM NAVIGATION BAR
+                _CartSummaryBottomBar(
+                  totalPrice: _totalPrice,
+                  discount: _discount,
+                  finalPrice: _finalPrice,
+                  voucherController: _voucherController,
+                  isApplyingVoucher: _isApplyingVoucher,
+                  voucherApplied: _voucherApplied,
+                  onApplyVoucher: _applyVoucher,
+                  onRemoveVoucher: _removeVoucher,
+                  onClearCart: _clearCart,
+                  onCheckout: _proceedToCheckout,
+                  onExpandSummary: _showSummaryBottomSheet,
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -345,12 +347,35 @@ Future<void> _clearCart() async {
       }
     }
   }
+
+  void _showSummaryBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      builder: (context) => _CartSummaryBottomSheet(
+        totalPrice: _totalPrice,
+        discount: _discount,
+        finalPrice: _finalPrice,
+        voucherController: _voucherController,
+        isApplyingVoucher: _isApplyingVoucher,
+        voucherApplied: _voucherApplied,
+        onApplyVoucher: _applyVoucher,
+        onRemoveVoucher: _removeVoucher,
+        onCheckout: _proceedToCheckout,
+      ),
+    );
+  }
 }
 
-
-
 // ============================================
-// SUB-COMPONENTS (Extracted for better performance)
+// SUB-COMPONENTS
 // ============================================
 
 class _PromoBanner extends StatelessWidget {
@@ -359,7 +384,7 @@ class _PromoBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [AppTheme.primaryLight, AppTheme.primaryColor],
@@ -369,16 +394,18 @@ class _PromoBanner extends StatelessWidget {
       ),
       child: const Row(
         children: [
-          Icon(Icons.local_offer, color: Colors.white, size: 20),
+          Icon(Icons.local_offer, color: Colors.white, size: 18),
           SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Gunakan kode "MERBABU10" untuk diskon 10%',
+              'Gunakan "MERBABU10" untuk diskon 10%',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -417,24 +444,24 @@ class _ErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(40),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 80,
-              height: 80,
+              width: 60,
+              height: 60,
               decoration: BoxDecoration(
                 color: AppTheme.errorColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.error_outline,
-                size: 40,
+                size: 30,
                 color: AppTheme.errorColor,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Text(
               'Gagal memuat keranjang',
               style: AppTheme.titleMedium.copyWith(
@@ -447,14 +474,16 @@ class _ErrorState extends StatelessWidget {
               style: AppTheme.bodyMedium.copyWith(
                 color: AppTheme.textSecondary,
               ),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh, size: 20),
+              icon: const Icon(Icons.refresh, size: 18),
               label: const Text('Coba Lagi'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryColor,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
             ),
           ],
@@ -471,47 +500,46 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(40),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 120,
-              height: 120,
+              width: 100,
+              height: 100,
               decoration: BoxDecoration(
                 color: AppTheme.primaryColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.shopping_cart_outlined,
-                size: 60,
+                size: 50,
                 color: AppTheme.primaryColor.withOpacity(0.5),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
             Text(
               'Keranjang Kosong',
-              style: AppTheme.titleLarge.copyWith(
+              style: AppTheme.titleMedium.copyWith(
                 color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
             const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 40),
+              padding: EdgeInsets.symmetric(horizontal: 20),
               child: Text(
                 'Tambahkan paket pendakian ke keranjang untuk memulai petualanganmu',
                 style: TextStyle(
                   color: AppTheme.textSecondary,
-                  fontSize: 14,
+                  fontSize: 13,
                 ),
                 textAlign: TextAlign.center,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
             ElevatedButton.icon(
-              icon: const Icon(Icons.explore_outlined),
+              icon: const Icon(Icons.explore_outlined, size: 18),
               label: const Text('Jelajahi Paket'),
-              // ✅ FIX: Empty Cart Flow ke Home, bukan pop
               onPressed: () {
                 Navigator.pushNamedAndRemoveUntil(
                   context,
@@ -522,8 +550,8 @@ class _EmptyState extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryColor,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
+                  horizontal: 24,
+                  vertical: 14,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -537,291 +565,250 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ============ PERUBAHAN 3: UPDATE CLASS _CartItemCard ============
-class _CartItemCard extends StatelessWidget {
-  final CartItem item;
+// ============ KONTEN UTAMA KERANJANG ============
+class _CartContent extends StatelessWidget {
+  final List<CartItem> cartItems;
+  final bool isSmallScreen;
+  final ScrollController scrollController;
   final DateFormat dateFormatter;
   final NumberFormat priceFormatter;
-  final Function(CartItem, int) onUpdateQuantity;
+  final Function(CartItem, int) onUpdateQuantityDebounced;
   final Function(CartItem) onRemove;
-  final VoidCallback onTapItem;
-  final VoidCallback onBookNow; // ✅ PARAMETER BARU
+  final Function(CartItem) onGoToPackageDetail;
+  final Function(CartItem) onGoToBookingForm;
 
-  const _CartItemCard({
-    required this.item,
+  const _CartContent({
+    required this.cartItems,
+    required this.isSmallScreen,
+    required this.scrollController,
     required this.dateFormatter,
     required this.priceFormatter,
-    required this.onUpdateQuantity,
+    required this.onUpdateQuantityDebounced,
     required this.onRemove,
-    required this.onTapItem,
-    required this.onBookNow, // ✅ TAMBAH INI
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Dismissible(
-      key: ValueKey('${item.paketId}-${item.tanggalBooking}'),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
-          color: AppTheme.errorColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Icon(
-          Icons.delete_outline,
-          color: AppTheme.errorColor,
-          size: 30,
-        ),
-      ),
-      confirmDismiss: (direction) async {
-        return await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Hapus Item'),
-            content: Text('Hapus ${item.paketName} dari keranjang?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Batal'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.errorColor,
-                ),
-                child: const Text('Hapus'),
-              ),
-            ],
-          ),
-        ) ?? false;
-      },
-      onDismissed: (direction) => onRemove(item),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Bagian atas: gambar dan detail
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _PackageImage(imageUrl: item.imageUrl),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _PackageDetails(
-                      item: item,
-                      dateFormatter: dateFormatter,
-                      priceFormatter: priceFormatter,
-                      onUpdateQuantity: onUpdateQuantity,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              
-              // ✅ BAGIAN BARU: TOMBOL ACTION
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: onBookNow,
-                      icon: const Icon(Icons.edit_calendar, size: 18),
-                      label: const Text('Booking Langsung'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        side: BorderSide(color: AppTheme.primaryColor),
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppTheme.primaryColor,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: onTapItem,
-                      icon: const Icon(Icons.visibility, size: 18),
-                      label: const Text('Lihat Detail'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.secondaryColor,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PackageImage extends StatelessWidget {
-  final String imageUrl;
-
-  const _PackageImage({required this.imageUrl});
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        width: 80,
-        height: 80,
-        decoration: BoxDecoration(
-          color: AppTheme.primaryColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: imageUrl.isNotEmpty
-            ? Image.network(
-                imageUrl,
-                width: 80,
-                height: 80,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Center(
-                    child: CircularProgressIndicator(
-                      value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded /
-                              loadingProgress.expectedTotalBytes!
-                          : null,
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(
-                    Icons.terrain,
-                    size: 40,
-                    color: AppTheme.primaryColor,
-                  );
-                },
-              )
-            : const Icon(
-                Icons.terrain,
-                size: 40,
-                color: AppTheme.primaryColor,
-              ),
-      ),
-    );
-  }
-}
-
-class _PackageDetails extends StatelessWidget {
-  final CartItem item;
-  final DateFormat dateFormatter;
-  final NumberFormat priceFormatter;
-  final Function(CartItem, int) onUpdateQuantity;
-
-  const _PackageDetails({
-    required this.item,
-    required this.dateFormatter,
-    required this.priceFormatter,
-    required this.onUpdateQuantity,
+    required this.onGoToPackageDetail,
+    required this.onGoToBookingForm,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Package Name
-        Text(
-          item.paketName,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.textPrimary,
+        if (isSmallScreen) const _PromoBanner(),
+        Expanded(
+          child: ListView.builder(
+            controller: scrollController,
+            padding: const EdgeInsets.all(12),
+            itemCount: cartItems.length,
+            itemBuilder: (context, index) {
+              final item = cartItems[index];
+              return _CompactCartItemCard(
+                item: item,
+                dateFormatter: dateFormatter,
+                priceFormatter: priceFormatter,
+                onUpdateQuantity: (cartItem, newQuantity) =>
+                    onUpdateQuantityDebounced(cartItem, newQuantity),
+                onRemove: onRemove,
+                onViewDetails: () => onGoToPackageDetail(item),
+                onBookNow: () => onGoToBookingForm(item),
+              );
+            },
           ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 4),
-        // Package Route
-        Row(
-          children: [
-            const Icon(
-              Icons.route,
-              size: 14,
-              color: AppTheme.textSecondary,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              item.paketRoute,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        // Booking Date
-        Row(
-          children: [
-            const Icon(
-              Icons.calendar_today,
-              size: 14,
-              color: AppTheme.textSecondary,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              dateFormatter.format(item.tanggalBooking),
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        // Quantity Controls and Price
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _QuantityControls(
-              quantity: item.jumlahOrang,
-              onDecrease: () => onUpdateQuantity(item, item.jumlahOrang - 1),
-              onIncrease: () => onUpdateQuantity(item, item.jumlahOrang + 1),
-            ),
-            Text(
-              'Rp ${priceFormatter.format(item.totalHarga)}',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.primaryColor,
-              ),
-            ),
-          ],
         ),
       ],
     );
   }
 }
 
-class _QuantityControls extends StatelessWidget {
+// ============ KARTU ITEM KOMPAK ============
+class _CompactCartItemCard extends StatelessWidget {
+  final CartItem item;
+  final DateFormat dateFormatter;
+  final NumberFormat priceFormatter;
+  final Function(CartItem, int) onUpdateQuantity;
+  final Function(CartItem) onRemove;
+  final VoidCallback onViewDetails;
+  final VoidCallback onBookNow;
+
+  const _CompactCartItemCard({
+    required this.item,
+    required this.dateFormatter,
+    required this.priceFormatter,
+    required this.onUpdateQuantity,
+    required this.onRemove,
+    required this.onViewDetails,
+    required this.onBookNow,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 2,
+      child: InkWell(
+        onTap: onViewDetails,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Gambar kecil
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      color: AppTheme.primaryColor.withOpacity(0.1),
+                    ),
+                    child: item.imageUrl.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              item.imageUrl,
+                              width: 60,
+                              height: 60,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(
+                                Icons.terrain,
+                                size: 30,
+                                color: AppTheme.primaryColor,
+                              ),
+                            ),
+                          )
+                        : const Icon(
+                            Icons.terrain,
+                            size: 30,
+                            color: AppTheme.primaryColor,
+                          ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.paketName,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.route,
+                              size: 12,
+                              color: AppTheme.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                item.paketRoute,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppTheme.textSecondary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              size: 12,
+                              color: AppTheme.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              dateFormatter.format(item.tanggalBooking),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _CompactQuantityControls(
+                    quantity: item.jumlahOrang,
+                    onDecrease: () => onUpdateQuantity(item, item.jumlahOrang - 1),
+                    onIncrease: () => onUpdateQuantity(item, item.jumlahOrang + 1),
+                  ),
+                  Text(
+                    'Rp ${priceFormatter.format(item.totalHarga)}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: onBookNow,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        side: BorderSide(color: AppTheme.primaryColor),
+                      ),
+                      child: const Text(
+                        'Booking',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: onViewDetails,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.secondaryColor,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                      child: const Text(
+                        'Detail',
+                        style: TextStyle(fontSize: 12, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactQuantityControls extends StatelessWidget {
   final int quantity;
   final VoidCallback onDecrease;
   final VoidCallback onIncrease;
 
-  const _QuantityControls({
+  const _CompactQuantityControls({
     required this.quantity,
     required this.onDecrease,
     required this.onIncrease,
@@ -832,34 +819,35 @@ class _QuantityControls extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: AppTheme.borderColor),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
             icon: Icon(
               Icons.remove,
-              size: 18,
+              size: 16,
               color: quantity > 1 ? AppTheme.primaryColor : AppTheme.textDisabled,
             ),
             onPressed: quantity > 1 ? onDecrease : null,
             padding: const EdgeInsets.all(4),
           ),
           Container(
-            width: 40,
+            width: 30,
             alignment: Alignment.center,
             child: Text(
               '$quantity',
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.add,
-              size: 18,
+              size: 16,
               color: AppTheme.primaryColor,
             ),
             onPressed: onIncrease,
@@ -871,7 +859,8 @@ class _QuantityControls extends StatelessWidget {
   }
 }
 
-class _CartSummary extends StatelessWidget {
+// ============ BOTTOM BAR SUMMARY ============
+class _CartSummaryBottomBar extends StatelessWidget {
   final double totalPrice;
   final double discount;
   final double finalPrice;
@@ -882,8 +871,9 @@ class _CartSummary extends StatelessWidget {
   final VoidCallback onRemoveVoucher;
   final VoidCallback onClearCart;
   final VoidCallback onCheckout;
+  final VoidCallback onExpandSummary;
 
-  const _CartSummary({
+  const _CartSummaryBottomBar({
     required this.totalPrice,
     required this.discount,
     required this.finalPrice,
@@ -894,12 +884,15 @@ class _CartSummary extends StatelessWidget {
     required this.onRemoveVoucher,
     required this.onClearCart,
     required this.onCheckout,
+    required this.onExpandSummary,
   });
 
   @override
   Widget build(BuildContext context) {
+    final priceFormatter = NumberFormat('#,##0', 'id_ID');
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
@@ -908,183 +901,282 @@ class _CartSummary extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Voucher Input
-          _VoucherInput(
-            controller: voucherController,
-            isApplyingVoucher: isApplyingVoucher,
-            voucherApplied: voucherApplied,
-            onApplyVoucher: onApplyVoucher,
-            onRemoveVoucher: onRemoveVoucher,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Total',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  Text(
+                    'Rp ${priceFormatter.format(finalPrice)}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                    onPressed: onClearCart,
+                    color: AppTheme.errorColor,
+                    tooltip: 'Kosongkan Keranjang',
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: onExpandSummary,
+                    icon: const Icon(Icons.receipt_long, size: 18),
+                    label: const Text('Detail'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.secondaryColor,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: onCheckout,
+                    icon: const Icon(Icons.shopping_cart_checkout, size: 18),
+                    label: const Text('Checkout'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          const SizedBox(height: 20),
-          // Price Breakdown
-          _PriceBreakdown(
-            totalPrice: totalPrice,
-            discount: discount,
-            finalPrice: finalPrice,
-          ),
-          const SizedBox(height: 20),
-          // Checkout Button
-          _CheckoutButton(
-            onCheckout: onCheckout,
-            onClearCart: onClearCart,
-          ),
+          const SizedBox(height: 4),
+          if (discount > 0)
+            Text(
+              'Diskon: Rp ${priceFormatter.format(discount)}',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppTheme.successColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
-class _VoucherInput extends StatelessWidget {
-  final TextEditingController controller;
+// ============ BOTTOM SHEET SUMMARY DETAIL ============
+class _CartSummaryBottomSheet extends StatefulWidget {
+  final double totalPrice;
+  final double discount;
+  final double finalPrice;
+  final TextEditingController voucherController;
   final bool isApplyingVoucher;
   final bool voucherApplied;
   final VoidCallback onApplyVoucher;
   final VoidCallback onRemoveVoucher;
+  final VoidCallback onCheckout;
 
-  const _VoucherInput({
-    required this.controller,
+  const _CartSummaryBottomSheet({
+    required this.totalPrice,
+    required this.discount,
+    required this.finalPrice,
+    required this.voucherController,
     required this.isApplyingVoucher,
     required this.voucherApplied,
     required this.onApplyVoucher,
     required this.onRemoveVoucher,
+    required this.onCheckout,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: TextFormField(
-            controller: controller,
-            decoration: InputDecoration(
-              hintText: voucherApplied
-                  ? 'Voucher diterapkan'
-                  : 'Masukkan kode voucher',
-              prefixIcon: const Icon(
-                Icons.local_offer_outlined,
-                color: AppTheme.textSecondary,
-              ),
-              suffixIcon: voucherApplied
-                  ? IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: onRemoveVoucher,
-                      color: AppTheme.errorColor,
-                    )
-                  : null,
-              filled: true,
-              fillColor: AppTheme.backgroundColor,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-            ),
-            enabled: !voucherApplied,
-          ),
-        ),
-        const SizedBox(width: 12),
-        ElevatedButton(
-          onPressed: voucherApplied || isApplyingVoucher ? null : onApplyVoucher,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.secondaryColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-          ),
-          child: isApplyingVoucher
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : Text(
-                  voucherApplied ? '✓' : 'Terapkan',
-                  style: const TextStyle(fontSize: 14),
-                ),
-        ),
-      ],
-    );
-  }
+  State<_CartSummaryBottomSheet> createState() => _CartSummaryBottomSheetState();
 }
 
-class _PriceBreakdown extends StatelessWidget {
-  final double totalPrice;
-  final double discount;
-  final double finalPrice;
-
-  const _PriceBreakdown({
-    required this.totalPrice,
-    required this.discount,
-    required this.finalPrice,
-  });
-
+class _CartSummaryBottomSheetState extends State<_CartSummaryBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final priceFormatter = NumberFormat('#,##0', 'id_ID');
 
-    return Column(
-      children: [
-        _PriceRow(
-          label: 'Subtotal',
-          value: totalPrice,
-          priceFormatter: priceFormatter,
-          isBold: false,
-        ),
-        if (discount > 0) ...[
-          const SizedBox(height: 8),
-          _PriceRow(
-            label: 'Diskon Voucher',
-            value: -discount,
-            priceFormatter: priceFormatter,
-            isBold: false,
-            isDiscount: true,
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Rincian Pembayaran',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimary,
+            ),
           ),
+          const SizedBox(height: 16),
+          // Voucher Input
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: widget.voucherController,
+                  decoration: InputDecoration(
+                    hintText: widget.voucherApplied
+                        ? 'Voucher diterapkan'
+                        : 'Masukkan kode voucher',
+                    prefixIcon: const Icon(
+                      Icons.local_offer_outlined,
+                      color: AppTheme.textSecondary,
+                    ),
+                    suffixIcon: widget.voucherApplied
+                        ? IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: widget.onRemoveVoucher,
+                            color: AppTheme.errorColor,
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: AppTheme.backgroundColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  enabled: !widget.voucherApplied,
+                ),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton(
+                onPressed: widget.voucherApplied || widget.isApplyingVoucher
+                    ? null
+                    : widget.onApplyVoucher,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.secondaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
+                child: widget.isApplyingVoucher
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        widget.voucherApplied ? '✓' : 'Terapkan',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Price Breakdown
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.backgroundColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                _SummaryRow(
+                  label: 'Subtotal',
+                  value: widget.totalPrice,
+                  priceFormatter: priceFormatter,
+                ),
+                if (widget.discount > 0) ...[
+                  const SizedBox(height: 8),
+                  _SummaryRow(
+                    label: 'Diskon Voucher',
+                    value: -widget.discount,
+                    priceFormatter: priceFormatter,
+                    isDiscount: true,
+                  ),
+                ],
+                const SizedBox(height: 12),
+                const Divider(),
+                const SizedBox(height: 12),
+                _SummaryRow(
+                  label: 'Total Pembayaran',
+                  value: widget.finalPrice,
+                  priceFormatter: priceFormatter,
+                  isTotal: true,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: widget.onCheckout,
+              icon: const Icon(Icons.shopping_cart_checkout, size: 24),
+              label: const Text(
+                'LANJUT KE PEMBAYARAN',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 4,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
         ],
-        const SizedBox(height: 12),
-        const Divider(height: 1),
-        const SizedBox(height: 12),
-        _PriceRow(
-          label: 'Total Pembayaran',
-          value: finalPrice,
-          priceFormatter: priceFormatter,
-          isTotal: true,
-        ),
-      ],
+      ),
     );
   }
 }
 
-class _PriceRow extends StatelessWidget {
+class _SummaryRow extends StatelessWidget {
   final String label;
   final double value;
   final NumberFormat priceFormatter;
-  final bool isBold;
   final bool isDiscount;
   final bool isTotal;
 
-  const _PriceRow({
+  const _SummaryRow({
     required this.label,
     required this.value,
     required this.priceFormatter,
-    this.isBold = false,
     this.isDiscount = false,
     this.isTotal = false,
   });
@@ -1107,14 +1199,13 @@ class _PriceRow extends StatelessWidget {
                   color: isDiscount
                       ? AppTheme.successColor
                       : AppTheme.textSecondary,
-                  fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
                 ),
         ),
         Text(
           'Rp ${priceFormatter.format(value.abs())}',
           style: isTotal
               ? const TextStyle(
-                  fontSize: 20,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: AppTheme.primaryColor,
                 )
@@ -1123,62 +1214,8 @@ class _PriceRow extends StatelessWidget {
                   color: isDiscount
                       ? AppTheme.successColor
                       : AppTheme.textPrimary,
-                  fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight: FontWeight.w600,
                 ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CheckoutButton extends StatelessWidget {
-  final VoidCallback onCheckout;
-  final VoidCallback onClearCart;
-
-  const _CheckoutButton({
-    required this.onCheckout,
-    required this.onClearCart,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: onCheckout,
-            icon: const Icon(Icons.shopping_cart_checkout, size: 24),
-            label: const Text(
-              'LANJUT KE PEMBAYARAN',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 4,
-              shadowColor: AppTheme.primaryColor.withOpacity(0.3),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextButton(
-          onPressed: onClearCart,
-          child: const Text(
-            'Kosongkan Keranjang',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.errorColor,
-            ),
-          ),
         ),
       ],
     );

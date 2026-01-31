@@ -56,7 +56,7 @@ flutter:
     - assets/images/thekelan.jpg
     - assets/images/wekas.jpg
     - assets/images/suwanting.jpeg
-    - assets/images/merbabu.jpg
+    - assets/images/Merbabu.jpg
 
 flutter_launcher_icons:
   android: true

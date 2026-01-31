@@ -94,35 +94,48 @@ class _RiwayatBookingScreenState extends State<RiwayatBookingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Riwayat Booking'),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+ appBar: AppBar(
+  title: const Text('Riwayat Booking'),
+  backgroundColor: AppTheme.primaryColor,
+  foregroundColor: Colors.white,
+  // Perbaikan tombol leading (Back)
+  leading: IconButton(
+    icon: const Icon(Icons.arrow_back),
+    onPressed: () {
+      // Jika bisa back secara normal, lakukan pop
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      } else {
+        // Jika stack kosong (kasus darurat), arahkan ke Home
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.home,
+          (route) => false,
+        );
+      }
+    },
+  ),
+  actions: [
+    if (_isRefreshing)
+      const Padding(
+        padding: EdgeInsets.only(right: 16),
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Colors.white,
+          ),
         ),
-        actions: [
-          if (_isRefreshing)
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              ),
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _refreshBookings,
-              tooltip: 'Refresh',
-            ),
-        ],
+      )
+    else
+      IconButton(
+        icon: const Icon(Icons.refresh),
+        onPressed: _refreshBookings,
+        tooltip: 'Refresh',
       ),
+  ],
+),
       body: RefreshIndicator(
         onRefresh: _refreshBookings,
         child: FutureBuilder<List<Booking>>(

@@ -1209,4 +1209,4 @@ class _DetailPaketScreenState extends State<DetailPaketScreen>
   String _formatPrice(double price) {
     return NumberFormat('#,##0', 'id_ID').format(price);
   }
-}
+    }

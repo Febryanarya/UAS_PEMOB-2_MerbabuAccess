@@ -111,16 +111,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           if (_booking != null) ...[
             const SizedBox(width: 8),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                // Navigasi ke Tiket
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  AppRoutes.ticket,
-                  (route) => false,
-                  arguments: _booking,
-                );
-              },
+          onPressed: () {
+          // 1. Tutup dialog
+          Navigator.pop(context);
+
+          // 2. Reset stack ke Home dulu
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.home,
+          (route) => false,
+         );
+
+  // 3. Baru tumpuk Riwayat di atasnya
+         Navigator.pushNamed(context, AppRoutes.riwayatBooking);
+        },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryColor,
               ),

@@ -53,6 +53,7 @@ class MerbabuAccessApp extends StatelessWidget {
           AppRoutes.login: (context) => const LoginScreen(),
           AppRoutes.register: (context) => const RegisterScreen(),
           AppRoutes.home: (context) => const HomeScreen(),
+          AppRoutes.riwayatBooking: (context) => const RiwayatBookingScreen(),
           AppRoutes.detailPaket: (context) {
             final paket = ModalRoute.of(context)!.settings.arguments as PaketPendakian;
             return DetailPaketScreen(paket: paket);
@@ -61,8 +62,7 @@ class MerbabuAccessApp extends StatelessWidget {
             final paket = ModalRoute.of(context)!.settings.arguments as PaketPendakian;
             return BookingFormScreen(paket: paket);
           },
-          // ❌ HAPUS INI: AppRoutes.riwayatBooking sudah ada di HomeScreen
-          // AppRoutes.riwayatBooking: (context) => const RiwayatBookingScreen(),
+          //AppRoutes.riwayatBooking: (context) => const RiwayatBookingScreen(),
           AppRoutes.profile: (context) => const ProfileScreen(),
           AppRoutes.weather: (context) => const WeatherScreen(),
           AppRoutes.cart: (context) => const CartScreen(),

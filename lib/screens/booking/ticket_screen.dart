@@ -189,7 +189,7 @@ _Harap tunjukkan tiket ini di pos pendakian_
           onPressed: () {
             Navigator.pushNamedAndRemoveUntil(
               context,
-              AppRoutes.riwayatBooking,
+              AppRoutes.home ,
               (route) => false,
             );
           },

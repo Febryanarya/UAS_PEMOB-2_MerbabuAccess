@@ -1,16 +1,13 @@
 {
-    "name": "MerbabuAccess",
-    "short_name": "Merbabu",
+    "name": "merbabuaccess_app",
+    "short_name": "merbabuaccess_app",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#E0F2F1",
-    "theme_color": "#00796B",
-    "description": "Aplikasi booking pendakian Gunung Merbabu - Pemesanan paket, informasi cuaca, dan panduan lengkap",
+    "background_color": "#0175C2",
+    "theme_color": "#0175C2",
+    "description": "A new Flutter project.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
-    "lang": "id-ID",
-    "dir": "ltr",
-    "categories": ["lifestyle", "travel", "sports"],
     "icons": [
         {
             "src": "icons/Icon-192.png",

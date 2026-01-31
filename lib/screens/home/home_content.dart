@@ -65,7 +65,6 @@ class _HomeContentState extends State<HomeContent> {
       child: CustomScrollView(
         slivers: [
           // ✅ HERO SECTION
-  
           SliverAppBar(
             expandedHeight: 200,
             collapsedHeight: 0,
@@ -118,7 +117,7 @@ class _HomeContentState extends State<HomeContent> {
                         vertical: 40,
                       ),
                       child: Column(
-                        mainAxisSize: MainAxisSize.min, // 🔥 FIX OVERFLOW
+                        mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -136,7 +135,7 @@ class _HomeContentState extends State<HomeContent> {
                               fontSize: 32,
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              height: 1.1, // 🔥 diperkecil
+                              height: 1.1,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -199,7 +198,7 @@ class _HomeContentState extends State<HomeContent> {
             ),
           ),
 
-          // ✅ PACKAGE LIST
+          // ✅ PACKAGE LIST - PERBAIKAN UTAMA DI SINI
           FutureBuilder<List<PaketPendakian>>(
             future: _paketFuture,
             builder: (context, snapshot) {
@@ -220,7 +219,7 @@ class _HomeContentState extends State<HomeContent> {
 
               // SUCCESS STATE - BUILD PACKAGE LIST
               final paketList = snapshot.data!;
-              return _buildPaketGrid(paketList);
+              return _buildPaketList(paketList); // Ubah dari _buildPaketGrid
             },
           ),
         ],
@@ -390,21 +389,18 @@ class _HomeContentState extends State<HomeContent> {
     );
   }
 
-  // ✅ PACKAGE GRID (CARDS)
-  Widget _buildPaketGrid(List<PaketPendakian> paketList) {
+  // ✅ PACKAGE LIST - DIPERBAIKI MENGGUNAKAN LIST VIEW UNTUK TAMPILAN YANG LEBIH RAPI
+  Widget _buildPaketList(List<PaketPendakian> paketList) {
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.85,
-        ),
+      sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
           (context, index) {
             final paket = paketList[index];
-            return _buildPaketCard(paket, index);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _buildPaketCard(paket, index),
+            );
           },
           childCount: paketList.length,
         ),
@@ -412,7 +408,7 @@ class _HomeContentState extends State<HomeContent> {
     );
   }
 
-  // ✅ PACKAGE CARD (WITH ASSETS IMAGES)
+  // ✅ PACKAGE CARD - DIPERBAIKI AGAR LEBIH SESUAI DENGAN DESAIN GAMBAR
   Widget _buildPaketCard(PaketPendakian paket, int index) {
     final routeColor = _getRouteColor(paket.route);
     
@@ -431,11 +427,78 @@ class _HomeContentState extends State<HomeContent> {
         },
         borderRadius: AppTheme.borderRadiusLarge,
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ✅ IMAGE SECTION WITH ASSETS
+              // ✅ HEADER DENGAN NAMA PAKET DAN RATING
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      paket.name,
+                      style: AppTheme.titleMedium.copyWith(
+                        color: AppTheme.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.star,
+                          size: 14,
+                          color: Colors.amber[600],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '4.8',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // ✅ JALUR BADGE
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: routeColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: routeColor.withOpacity(0.3), width: 1),
+                ),
+                child: Text(
+                  'Jalur ${paket.route}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: routeColor,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ✅ IMAGE SECTION
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: AspectRatio(
@@ -445,156 +508,47 @@ class _HomeContentState extends State<HomeContent> {
                       image: DecorationImage(
                         image: AssetImage(_getImageAsset(index)),
                         fit: BoxFit.cover,
-                        colorFilter: ColorFilter.mode(
-                          Colors.black.withOpacity(0.1),
-                          BlendMode.darken,
-                        ),
                       ),
-                    ),
-                    child: Stack(
-                      children: [
-                        // Gradient Overlay
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
-                              colors: [
-                                Colors.black.withOpacity(0.3),
-                                Colors.transparent,
-                              ],
-                            ),
-                          ),
-                        ),
-                        
-                        // RATING BADGE
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.star,
-                                  size: 12,
-                                  color: Colors.amber[600],
-                                ),
-                                const SizedBox(width: 2),
-                                Text(
-                                  '4.8',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey[800],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        
-                        // JALUR BADGE
-                        Positioned(
-                          bottom: 8,
-                          left: 8,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: routeColor.withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              paket.route.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
-              // PACKAGE NAME
-              Text(
-                paket.name,
-                style: AppTheme.labelLarge.copyWith(
-                  color: AppTheme.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-
-              // DURATION & ROUTE
+              // ✅ DETAILS SECTION
               Row(
                 children: [
                   Icon(
                     Icons.timer_outlined,
-                    size: 12,
+                    size: 16,
                     color: AppTheme.textSecondary,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 8),
                   Text(
                     paket.duration,
-                    style: AppTheme.labelSmall.copyWith(
+                    style: AppTheme.bodyMedium.copyWith(
                       color: AppTheme.textSecondary,
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 4),
-
-              Row(
-                children: [
+                  const Spacer(),
                   Icon(
-                    Icons.route_outlined,
-                    size: 12,
+                    Icons.terrain,
+                    size: 16,
                     color: AppTheme.textSecondary,
                   ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      'Jalur ${paket.route}',
-                      style: AppTheme.labelSmall.copyWith(
-                        color: AppTheme.textSecondary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  const SizedBox(width: 8),
+                  Text(
+                    paket.route,
+                    style: AppTheme.bodyMedium.copyWith(
+                      color: AppTheme.textSecondary,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
 
-              // PRICE & BOOK BUTTON
-              const Spacer(),
+              // ✅ PRICE AND BUTTON SECTION
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -607,11 +561,11 @@ class _HomeContentState extends State<HomeContent> {
                           color: AppTheme.textDisabled,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Text(
                         'Rp ${_formatPrice(paket.price)}',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: AppTheme.primaryColor,
                         ),
@@ -619,22 +573,22 @@ class _HomeContentState extends State<HomeContent> {
                     ],
                   ),
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
                       color: AppTheme.primaryColor,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
                           color: AppTheme.primaryColor.withOpacity(0.3),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
                     child: const Icon(
                       Icons.arrow_forward_rounded,
-                      size: 18,
+                      size: 20,
                       color: Colors.white,
                     ),
                   ),
